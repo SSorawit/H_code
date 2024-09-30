@@ -19,9 +19,15 @@ void connectToMQTTBroker();
 void mqttCallback(char *topic, byte *payload, unsigned int length);
 void WiFi_setup();
 
+int state;
+int LED_ON = 1;
+int LED_OFF = 2;
 void setup() {
 
   Serial.begin(115200);
+  state = 2;
+  pinMode(D2,OUTPUT);
+  pinMode(D1,INPUT);
   WiFi_setup();
 
   mqtt_client.setServer(mqtt_broker, mqtt_port);
@@ -31,7 +37,21 @@ void setup() {
 }
 
 void loop() {
-    mqtt_client.loop();   
+    mqtt_client.loop();
+    if(state == LED_OFF){
+        digitalWrite(D2,LOW);
+        mqttMessage.toLowerCase();
+        if(mqttMessage == "on" || digitalRead(D1) == 1){
+            state = LED_ON;
+        }
+    }
+    if(state == LED_ON){
+        digitalWrite(D2,HIGH);
+        mqttMessage.toLowerCase();
+        if(mqttMessage == "off" || digitalRead(D1) == 1){
+            state = LED_OFF;
+        }
+    }
 }
 
 void WiFi_setup() {
