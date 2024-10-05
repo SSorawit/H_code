@@ -18,10 +18,12 @@ void setupWiFiManager();
 void connectToMQTTBroker();
 void mqttCallback(char *topic, byte *payload, unsigned int length);
 void WiFi_setup();
+IRAM_ATTR void handleInterrupt();
 
 int state;
 int LED_ON = 1;
 int LED_OFF = 2;
+int flag = false;
 void setup() {
 
   Serial.begin(115200);
@@ -33,6 +35,7 @@ void setup() {
   mqtt_client.setServer(mqtt_broker, mqtt_port);
   mqtt_client.setCallback(mqttCallback);
   connectToMQTTBroker();
+  attachInterrupt(digitalPinToInterrupt(D1),handleInterrupt,RISING);
 
 }
 
@@ -41,15 +44,27 @@ void loop() {
     if(state == LED_OFF){
         digitalWrite(D2,LOW);
         mqttMessage.toLowerCase();
-        if(mqttMessage == "on" || digitalRead(D1) == 1){
+        if(mqttMessage == "on"){
             state = LED_ON;
+        }
+        else if(flag == true){
+            flag = false;
+        if(digitalRead(D1) == 1){
+            state = LED_ON;
+        }
         }
     }
     if(state == LED_ON){
         digitalWrite(D2,HIGH);
         mqttMessage.toLowerCase();
-        if(mqttMessage == "off" || digitalRead(D1) == 1){
+        if(mqttMessage == "off"){
             state = LED_OFF;
+        }
+        else if(flag == true){
+            flag = false;
+        if(digitalRead(D1) == 1){
+            state = LED_OFF;
+        }
         }
     }
 }
@@ -114,4 +129,8 @@ void mqttCallback(char *topic, byte *payload, unsigned int length) {
         mqttMessage += (char)payload[i];  // Convert *byte to string
     }
     Serial.println(mqttMessage);
+}
+
+void handleInterrupt(){
+  flag = true;
 }
