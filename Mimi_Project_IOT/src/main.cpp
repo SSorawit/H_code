@@ -11,6 +11,7 @@
 DHT_Unified dht(DHTPIN, DHTTYPE);
 LiquidCrystal_I2C lcd(0x27,16,4);
 
+const int watesensor = A0;
 const int IDLE = 0;
 const int READ_SENSOR = 1;
 const int FILL_WATER = 2;
@@ -18,6 +19,7 @@ const int SEND_DATA = 3;
 int state;
 float temp;
 float humi;
+int waterlevel;
 void setup() {
   Serial.begin(115200);
   lcd.init();
@@ -37,6 +39,7 @@ sensors_event_t event;
     temp = event.temperature;
     dht.humidity().getEvent(&event);
     humi = event.relative_humidity;
+    waterlevel = analogRead(watesensor);
     state = SEND_DATA;
   }
   if(state == SEND_DATA){
@@ -54,7 +57,13 @@ sensors_event_t event;
     lcd.print("Humi : ");
     lcd.print(humi);
     lcd.print(" %");
+    delay(2000);
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("WaterLv : ");
+    lcd.print(waterlevel);
+    Serial.println(waterlevel);
     state = IDLE;
-    delay(1000);
+    delay(2000);
   }
 }
