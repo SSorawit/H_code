@@ -42,6 +42,9 @@ sensors_event_t event;
     waterlevel = analogRead(watesensor);
     state = SEND_DATA;
   }
+  if(state == FILL_WATER){
+    
+  }
   if(state == SEND_DATA){
     Serial.print(F("Temperature : "));
     Serial.print(temp);
