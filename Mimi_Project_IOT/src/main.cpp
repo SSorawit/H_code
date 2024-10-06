@@ -10,7 +10,7 @@
 
 DHT_Unified dht(DHTPIN, DHTTYPE);
 LiquidCrystal_I2C lcd(0x27,16,4);
-
+const int Relay = D5;
 const int watesensor = A0;
 const int IDLE = 0;
 const int READ_SENSOR = 1;
@@ -21,6 +21,7 @@ float temp;
 float humi;
 int waterlevel;
 void setup() {
+  pinMode(D5, OUTPUT);
   Serial.begin(115200);
   lcd.init();
   lcd.clear();
@@ -35,17 +36,42 @@ sensors_event_t event;
     state = READ_SENSOR;
   }
   if(state == READ_SENSOR){
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("READ_SENSOR");
+    delay(1000);
     dht.temperature().getEvent(&event);
     temp = event.temperature;
     dht.humidity().getEvent(&event);
     humi = event.relative_humidity;
     waterlevel = analogRead(watesensor);
-    state = SEND_DATA;
+    if(waterlevel > 200){
+      state = SEND_DATA;
+    }
+    else if(waterlevel < 200){
+      state = FILL_WATER;
+    }
   }
   if(state == FILL_WATER){
-    
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("FILL_WATER");
+    delay(1000);
+    digitalWrite(D5, LOW);
+    Serial.println("pumpON");
+    delay(5000);
+    digitalWrite(D5, HIGH);
+    Serial.println("pumpOFF");
+    delay(5000);
+    state = SEND_DATA;
+
   }
   if(state == SEND_DATA){
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("SEND_DATA");
+    delay(1000);
+    lcd.clear();
     Serial.print(F("Temperature : "));
     Serial.print(temp);
     Serial.println(F("°C"));
