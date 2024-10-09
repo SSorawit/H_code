@@ -4,7 +4,16 @@
 #include <DHT_U.h>
 #include <Wire.h> 
 #include <LiquidCrystal_I2C.h>
-
+//Blynk--------------------------
+#define BLYNK_TEMPLATE_ID "TMPL6lpPmz-xJ"
+#define BLYNK_TEMPLATE_NAME "Mini Project"
+#define BLYNK_AUTH_TOKEN "UpqPgsdT12qiN9bgrVEVaoTBnCqycb12"
+#define BLYNK_PRINT Serial
+#include <ESP8266WiFi.h>
+#include <BlynkSimpleEsp8266.h>
+char ssid[] = "XViii";
+char pass[] = "53103310";
+//-------------------------------
 #define DHTPIN D4     
 #define DHTTYPE    DHT11     
 
@@ -20,6 +29,8 @@ int state;
 float temp;
 float humi;
 int waterlevel;
+
+
 void setup() {
   pinMode(D5, OUTPUT);
   Serial.begin(115200);
@@ -27,10 +38,11 @@ void setup() {
   lcd.clear();
   lcd.backlight();
   dht.begin();
+  Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
   state = IDLE;
 }
-
 void loop() {
+Blynk.run();
 sensors_event_t event;
   if(state == IDLE){
     state = READ_SENSOR;
@@ -79,6 +91,7 @@ sensors_event_t event;
     lcd.print("Temp : ");
     lcd.print(temp);
     lcd.print(" C");
+    Blynk.virtualWrite(V1, temp);
     Serial.print(F("Humidity : "));
     Serial.print(humi);
     Serial.println(F("%"));
@@ -86,12 +99,14 @@ sensors_event_t event;
     lcd.print("Humi : ");
     lcd.print(humi);
     lcd.print(" %");
+    Blynk.virtualWrite(V2, humi);
     delay(2000);
     lcd.clear();
     lcd.setCursor(0,0);
     lcd.print("WaterLv : ");
     lcd.print(waterlevel);
     Serial.println(waterlevel);
+    Blynk.virtualWrite(V0, waterlevel);
     state = IDLE;
     delay(2000);
   }
