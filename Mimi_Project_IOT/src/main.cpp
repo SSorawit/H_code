@@ -25,10 +25,13 @@ const int IDLE = 0;
 const int READ_SENSOR = 1;
 const int FILL_WATER = 2;
 const int SEND_DATA = 3;
+const int MODEAUTO = 4;
+const int MODEMANUAL = 5;
 int state;
 float temp;
 float humi;
 int waterlevel;
+int lavelwater;
 
 
 void setup() {
@@ -41,6 +44,25 @@ void setup() {
   Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
   state = IDLE;
 }
+
+BLYNK_WRITE(V3)
+{   
+  int value = param.asInt(); // Get value as integer
+  Serial.println(value);
+  if(value >= 1){
+    digitalWrite(D5,HIGH);
+  }else{
+    digitalWrite(D5,LOW);
+  }
+}
+BLYNK_WRITE(V4)
+{   
+  int value = param.asInt(); // Get value as integer
+  lavelwater = value;
+  Serial.print("Current Level Water : ");
+  Serial.println(lavelwater);
+}
+
 void loop() {
 Blynk.run();
 sensors_event_t event;
@@ -57,10 +79,10 @@ sensors_event_t event;
     dht.humidity().getEvent(&event);
     humi = event.relative_humidity;
     waterlevel = analogRead(watesensor);
-    if(waterlevel > 200){
+    if(waterlevel > lavelwater){
       state = SEND_DATA;
     }
-    else if(waterlevel < 200){
+    else if(waterlevel < lavelwater){
       state = FILL_WATER;
     }
   }
