@@ -25,8 +25,7 @@ const int IDLE = 0;
 const int READ_SENSOR = 1;
 const int FILL_WATER = 2;
 const int SEND_DATA = 3;
-const int MODEAUTO = 4;
-const int MODEMANUAL = 5;
+
 int state;
 float temp;
 float humi;
