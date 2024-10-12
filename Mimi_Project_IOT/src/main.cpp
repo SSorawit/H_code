@@ -29,8 +29,8 @@ const int SEND_DATA = 3;
 int state;
 float temp;
 float humi;
-int waterlevel;
-int lavelwater;
+float waterlevel;
+float lavelwater;
 
 
 void setup() {
@@ -126,6 +126,7 @@ sensors_event_t event;
     lcd.setCursor(0,0);
     lcd.print("WaterLv : ");
     lcd.print(waterlevel);
+    Serial.print("WaterLv : ");
     Serial.println(waterlevel);
     Blynk.virtualWrite(V0, waterlevel);
     state = IDLE;
