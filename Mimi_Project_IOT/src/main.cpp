@@ -10,7 +10,7 @@
 const char* host = "script.google.com";
 const int httpsPort = 443;
 WiFiClientSecure client; //--> Create a WiFiClientSecure object.
-String GAS_ID = "AKfycbycvy4nHf0CoCEsRCk1uetAP3PvrCRBx-qVabvXkG-U3PJD3VpYcTmWt3qEJ3j-FM5m"; //--> spreadsheet script ID
+String GAS_ID = "AKfycbydlQ90c5MVFtUdd6UI6n7tgG9qyRWLBn_ZVqIvT84sOFhLgfut4qwxUyBYMM0S__oL"; //--> spreadsheet script ID
 void sendData(float value,float value2);
 //Blynk--------------------------
 #define BLYNK_TEMPLATE_ID "TMPL6lpPmz-xJ"
@@ -48,8 +48,23 @@ void setup() {
   lcd.clear();
   lcd.backlight();
   dht.begin();
+  // การเชื่อมต่อ WiFi
+  WiFi.begin(ssid, pass);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+    lcd.setCursor(0, 0);
+    lcd.print("Connecting WiFi");
+  }
+  Serial.println("WiFi connected");
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("WiFi connected");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
   Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
   state = IDLE;
+  client.setInsecure();
 }
 
 BLYNK_WRITE(V3)
@@ -145,8 +160,8 @@ sensors_event_t event;
 }
 
 //test_script
-//https://script.google.com/macros/s/AKfycbycvy4nHf0CoCEsRCk1uetAP3PvrCRBx-qVabvXkG-U3PJD3VpYcTmWt3qEJ3j-FM5m/exec
-//https://script.google.com/macros/s/AKfycbycvy4nHf0CoCEsRCk1uetAP3PvrCRBx-qVabvXkG-U3PJD3VpYcTmWt3qEJ3j-FM5m/exec?temp=28&humi=65
+//https://script.google.com/macros/s/AKfycbydlQ90c5MVFtUdd6UI6n7tgG9qyRWLBn_ZVqIvT84sOFhLgfut4qwxUyBYMM0S__oL/exec
+//https://script.google.com/macros/s/AKfycbydlQ90c5MVFtUdd6UI6n7tgG9qyRWLBn_ZVqIvT84sOFhLgfut4qwxUyBYMM0S__oL/exec?temp=28&humi=65
 
 void sendData(float value,float value2) {
   Serial.println("==========");
@@ -155,7 +170,8 @@ void sendData(float value,float value2) {
   
   //----------------------------------------Connect to Google host
   if (!client.connect(host, httpsPort)) {
-    Serial.println("connection failed");
+    lcd.setCursor(0, 0);
+    lcd.print("GAS conn failed");
     return;
   }
   //----------------------------------------
