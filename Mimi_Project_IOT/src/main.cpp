@@ -1,9 +1,17 @@
 #include <Arduino.h>
 #include <Adafruit_Sensor.h>
+#include <ESP8266WiFi.h>
+#include <WiFiClientSecure.h>
 #include <DHT.h>
 #include <DHT_U.h>
 #include <Wire.h> 
 #include <LiquidCrystal_I2C.h>
+//Host & httpsPort----------------
+const char* host = "script.google.com";
+const int httpsPort = 443;
+WiFiClientSecure client; //--> Create a WiFiClientSecure object.
+String GAS_ID = "AKfycbycvy4nHf0CoCEsRCk1uetAP3PvrCRBx-qVabvXkG-U3PJD3VpYcTmWt3qEJ3j-FM5m"; //--> spreadsheet script ID
+void sendData(float value,float value2);
 //Blynk--------------------------
 #define BLYNK_TEMPLATE_ID "TMPL6lpPmz-xJ"
 #define BLYNK_TEMPLATE_NAME "Mini Project"
@@ -66,6 +74,7 @@ void loop() {
 Blynk.run();
 sensors_event_t event;
   if(state == IDLE){
+    Blynk.run();
     state = READ_SENSOR;
   }
   if(state == READ_SENSOR){
@@ -129,7 +138,62 @@ sensors_event_t event;
     Serial.print("WaterLv : ");
     Serial.println(waterlevel);
     Blynk.virtualWrite(V0, waterlevel);
+    sendData(temp,humi);
     state = IDLE;
     delay(2000);
   }
 }
+
+//test_script
+//https://script.google.com/macros/s/AKfycbycvy4nHf0CoCEsRCk1uetAP3PvrCRBx-qVabvXkG-U3PJD3VpYcTmWt3qEJ3j-FM5m/exec
+//https://script.google.com/macros/s/AKfycbycvy4nHf0CoCEsRCk1uetAP3PvrCRBx-qVabvXkG-U3PJD3VpYcTmWt3qEJ3j-FM5m/exec?temp=28&humi=65
+
+void sendData(float value,float value2) {
+  Serial.println("==========");
+  Serial.print("connecting to ");
+  Serial.println(host);
+  
+  //----------------------------------------Connect to Google host
+  if (!client.connect(host, httpsPort)) {
+    Serial.println("connection failed");
+    return;
+  }
+  //----------------------------------------
+
+  //----------------------------------------Proses dan kirim data  
+
+  float string_temp = value; 
+  float string_humi = value2;
+  String url = "/macros/s/" + GAS_ID + "/exec?temp=" + string_temp + "&humi="+string_humi; //  2 variables 
+  Serial.print("requesting URL: ");
+  Serial.println(url);
+
+  client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+         "Host: " + host + "\r\n" +
+         "User-Agent: BuildFailureDetectorESP8266\r\n" +
+         "Connection: close\r\n\r\n");
+
+  Serial.println("request sent");
+  //----------------------------------------
+
+  //---------------------------------------
+  while (client.connected()) {
+    String line = client.readStringUntil('\n');
+    if (line == "\r") {
+      Serial.println("headers received");
+      break;
+    }
+  }
+  String line = client.readStringUntil('\n');
+  if (line.startsWith("{\"state\":\"success\"")) {
+    Serial.println("esp8266/Arduino CI successfull!");
+  } else {
+    Serial.println("esp8266/Arduino CI has failed");
+  }
+  Serial.print("reply was : ");
+  Serial.println(line);
+  Serial.println("closing connection");
+  Serial.println("==========");
+  Serial.println();
+  //----------------------------------------
+} 
