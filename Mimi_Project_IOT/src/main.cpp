@@ -20,7 +20,7 @@ void sendData(float value,float value2);
 #include <ESP8266WiFi.h>
 #include <BlynkSimpleEsp8266.h>
 char ssid[] = "XViii";
-char pass[] = "53103310";
+char pass[] = "0653514914";
 //-------------------------------
 #define DHTPIN D4     
 #define DHTTYPE    DHT11     
