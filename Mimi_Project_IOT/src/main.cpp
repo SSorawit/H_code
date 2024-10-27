@@ -44,11 +44,12 @@ int state;
 float temp;
 float humi;
 float waterlevel;
-float lavelwater;
+float lavelwater = 20;
 
 
 void setup() {
   pinMode(D5, OUTPUT);
+  digitalWrite(D5, HIGH);
   Serial.begin(115200);
   lcd.init();
   lcd.clear();
@@ -160,7 +161,7 @@ sensors_event_t event;
     Serial.println(waterlevel);
     Blynk.virtualWrite(V0, waterlevel);
     sendData(temp,humi,waterlevel);
-    delay(5000);
+    delay(8000);
     // ส่งการแจ้งเตือน LINE Notify
     sendLineNotificationValue("Temperature", temp);
     delay(1000);
