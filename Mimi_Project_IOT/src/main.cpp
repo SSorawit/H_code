@@ -6,12 +6,18 @@
 #include <DHT_U.h>
 #include <Wire.h> 
 #include <LiquidCrystal_I2C.h>
+#include <ESP8266HTTPClient.h>
 //Host & httpsPort----------------
 const char* host = "script.google.com";
 const int httpsPort = 443;
 WiFiClientSecure client; //--> Create a WiFiClientSecure object.
-String GAS_ID = "AKfycbydlQ90c5MVFtUdd6UI6n7tgG9qyRWLBn_ZVqIvT84sOFhLgfut4qwxUyBYMM0S__oL"; //--> spreadsheet script ID
-void sendData(float value,float value2);
+String GAS_ID = "AKfycbwHbjsdQ2WOtUd_cSvrYLMeTPUnXNpG8nBKNMMaRd3BrnzBNK8zOB2M31PH_eeECeyF"; //--> spreadsheet script ID
+void sendData(float value,float value2,float value3);
+//LineNotify-------------------------------------------------------
+#define LINE_TOKEN "8Gqa0YR3crPG7xhcJRtkXm8HdOYSz9f8VHdN2y68dlv"
+HTTPClient http;
+void sendLineNotification(String message);
+void sendLineNotificationValue(String varName, float value);
 //Blynk--------------------------
 #define BLYNK_TEMPLATE_ID "TMPL6lpPmz-xJ"
 #define BLYNK_TEMPLATE_NAME "Mini Project"
@@ -153,46 +159,52 @@ sensors_event_t event;
     Serial.print("WaterLv : ");
     Serial.println(waterlevel);
     Blynk.virtualWrite(V0, waterlevel);
-    sendData(temp,humi);
+    sendData(temp,humi,waterlevel);
+    delay(5000);
+    // ส่งการแจ้งเตือน LINE Notify
+    sendLineNotificationValue("Temperature", temp);
+    delay(1000);
+    sendLineNotificationValue("Humidity", humi);
+    delay(1000);
+    sendLineNotificationValue("Water Level", waterlevel);
+    delay(1000);
     state = IDLE;
     delay(2000);
   }
 }
 
 //test_script
-//https://script.google.com/macros/s/AKfycbydlQ90c5MVFtUdd6UI6n7tgG9qyRWLBn_ZVqIvT84sOFhLgfut4qwxUyBYMM0S__oL/exec
-//https://script.google.com/macros/s/AKfycbydlQ90c5MVFtUdd6UI6n7tgG9qyRWLBn_ZVqIvT84sOFhLgfut4qwxUyBYMM0S__oL/exec?temp=28&humi=65
+//https://script.google.com/macros/s/AKfycbwHbjsdQ2WOtUd_cSvrYLMeTPUnXNpG8nBKNMMaRd3BrnzBNK8zOB2M31PH_eeECeyF/exec
+//https://script.google.com/macros/s/AKfycbwHbjsdQ2WOtUd_cSvrYLMeTPUnXNpG8nBKNMMaRd3BrnzBNK8zOB2M31PH_eeECeyF/exec?temp=28&humi=65
 
-void sendData(float value,float value2) {
+void sendData(float value, float value2, float value3) {
   Serial.println("==========");
   Serial.print("connecting to ");
   Serial.println(host);
   
-  //----------------------------------------Connect to Google host
+  // Connect to Google host
   if (!client.connect(host, httpsPort)) {
     lcd.setCursor(0, 0);
     lcd.print("GAS conn failed");
     return;
   }
-  //----------------------------------------
 
-  //----------------------------------------Proses dan kirim data  
-
+  // Prepare and send data  
   float string_temp = value; 
   float string_humi = value2;
-  String url = "/macros/s/" + GAS_ID + "/exec?temp=" + string_temp + "&humi="+string_humi; //  2 variables 
+  float string_waterlevel = value3;
+  String url = "/macros/s/" + GAS_ID + "/exec?temp=" + string_temp + "&humi=" + string_humi + "&wlevel=" + string_waterlevel; // Send 3 variables 
   Serial.print("requesting URL: ");
   Serial.println(url);
 
   client.print(String("GET ") + url + " HTTP/1.1\r\n" +
-         "Host: " + host + "\r\n" +
-         "User-Agent: BuildFailureDetectorESP8266\r\n" +
-         "Connection: close\r\n\r\n");
+               "Host: " + host + "\r\n" +
+               "User-Agent: BuildFailureDetectorESP8266\r\n" +
+               "Connection: close\r\n\r\n");
 
   Serial.println("request sent");
-  //----------------------------------------
 
-  //---------------------------------------
+  // Wait for response
   while (client.connected()) {
     String line = client.readStringUntil('\n');
     if (line == "\r") {
@@ -200,16 +212,57 @@ void sendData(float value,float value2) {
       break;
     }
   }
+  
   String line = client.readStringUntil('\n');
   if (line.startsWith("{\"state\":\"success\"")) {
-    Serial.println("esp8266/Arduino CI successfull!");
+    Serial.println("esp8266/Arduino CI successful!");
   } else {
     Serial.println("esp8266/Arduino CI has failed");
   }
-  Serial.print("reply was : ");
+  
+  Serial.print("reply was: ");
   Serial.println(line);
   Serial.println("closing connection");
   Serial.println("==========");
   Serial.println();
-  //----------------------------------------
-} 
+}
+
+void sendLineNotification(String message)
+{
+  if (WiFi.status() == WL_CONNECTED)
+  {
+    client.setInsecure(); // สำหรับการเชื่อมต่อ HTTPS แบบไม่ตรวจสอบใบรับรอง
+    http.begin(client, "https://notify-api.line.me/api/notify");
+ 
+    http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+    http.addHeader("Authorization", "Bearer " + String(LINE_TOKEN));
+ 
+    String payload = "message=" + message;
+    int httpResponseCode = http.POST(payload);
+ 
+    if (httpResponseCode > 0)
+    {
+      Serial.print("LINE Notify Response Code: ");
+      Serial.println(httpResponseCode);
+    }
+    else
+    {
+      Serial.print("Error sending LINE Notify: ");
+      Serial.println(httpResponseCode);
+    }
+ 
+    http.end();
+  }
+  else
+  {
+    Serial.println("WiFi not connected");
+  }
+}
+
+void sendLineNotificationValue(String varName, float value)
+{
+  String strValue = String(value); // แปลงจาก int เป็น String
+  {
+    sendLineNotification(varName + " = " + strValue);
+  }
+}
